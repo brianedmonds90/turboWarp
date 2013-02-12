@@ -58,6 +58,7 @@ class MultiTouchController{//Used to process the android API touch events for ea
   }
   public void motion(MotionEvent me){//Used when a finger moves on the screen
     MultiTouch temp=null;
+    //println("Inside of motion");
     for(int i=0;i<me.getPointerCount();i++){
       int j=me.getPointerId(i);
       int index=indexOf(j);
@@ -96,4 +97,5 @@ class MultiTouchController{//Used to process the android API touch events for ea
   pt firstPt(){//Returns the first point of the MultiTouchController
     return mTContainer.get(0).disk; 
   }
+  
 }

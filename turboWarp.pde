@@ -1,14 +1,15 @@
 // Flat tringle mesh with texture for image warping
 // Written by Jarek Rossignac June 2006
+//Modified to support multiTouch on android devices by Brian Edmonds
 import processing.opengl.*;                // comment out if not using OpenGL
-PImage myImage;                            // image used as tecture 
-MultiTouchController mController;  //MultiTouch object
+MultiTouchController mController;    //Multiple Finger touch object
 
+PImage myImage;                            // image used as tecture 
+boolean pressed;
 int n=33;                                   // size of grid. Must be >2!
 pt[][] G = new pt [n][n];                  // array of vertices
 int pi,pj;                                   // indices of vertex being dragged when mouse is pressed
 pt Mouse = new pt(0,0,0);                   // current mouse position
-boolean pressed;
 boolean showVertices=true, showEdges=false, showTexture=true;  // flags for rendering vertices and edges
 color red = color(200, 10, 10), blue = color(10, 10, 200), green = color(10, 200, 20), 
 magenta = color(200, 50, 200), black = color(10, 10, 10); 
@@ -51,28 +52,28 @@ int fstp=0, nstp=0;              // Iteration counters for fast and normal smoot
 boolean smoothing = false;
 
 // ** SETUP **
-void setup() { size(displayWidth, displayHeight, P3D);                              //for OpenGL use: void setup() { size(800, 800, OPENGL);  
+void setup() { size(800, 800, OPENGL);                              //for OpenGL use: void setup() { size(800, 800, OPENGL);  
   PFont font = loadFont("Courier-14.vlw"); textFont(font, 12);
   myImage = loadImage("jarek.jpg");                                 // load image for texture
   ww=1.0/(n-1); hh=1.0/(n-1);                                            // set intial width and height of a cell
-  w=myImage.width*ww; h=myImage.height*hh;   // set intial width and height of a cell in normalized [0,1]x[0,1]
-  mController=new MultiTouchController();
-  pressed=false;
+  w=width*ww; h=height*hh;                                            // set intial width and height of a cell in normalized [0,1]x[0,1]
   resetVertices();
   pinBorder();
-  initConstraints ();
+  initConstraints();
+  pressed= false;
+  mController=new MultiTouchController();
   } 
  
 void resetVertices() {   // resets points and laplace vectors 
-   for (int i= 0; i<n; i++) 
-     for (int j=0; j<n; j++) {
-         G[i][j]=new pt(i*w,j*h,0); 
-         L[i][j]=new vec(0,0,0); 
-         B[i][j]=new vec(0,0,0);  
-         Q[i][j]=new vec(0,0,0);  
-         V[i][j]=new vec(0,0,0);
+   for (int i=0; i<n; i++) for (int j=0; j<n; j++) {
+     G[i][j]=new pt(i*w,j*h,0); 
+     L[i][j]=new vec(0,0,0); 
+     B[i][j]=new vec(0,0,0);  
+     Q[i][j]=new vec(0,0,0);  
+     V[i][j]=new vec(0,0,0);
      };  
    } 
+
 void pinBorder() { // pins two rings of border vertices
   for (int i=0; i<n; i++) for (int j=0; j<n; j++) pinned[i][j]=false;  
   for (int i=0; i<n; i++) {pinned[i][0]=true; pinned[i][1]=true;    pinned[i][n-2]=true; pinned[i][n-1]=true; };
@@ -83,45 +84,31 @@ void pinBorder() { // pins two rings of border vertices
  
 // ** DRAW **
 void draw() { background(255); sphereDetail(4); 
- // Mouse.setToMouse(); 
- if(mController.mTContainer.size()>0)
-     Mouse.setTo(mController.firstPt());
-  if (pressed) {
-    G[pi][pj].setTo(Mouse); 
-    G[pi][pj].addVec(offset);
-  };
+//  Mouse.setToMouse(); 
+//  if(mController.mTContainer.size()>0)
+//    Mouse.setTo(mController.firstPt());
+  
   if (smoothing) {for(int k=0; k<30; k++) if (sfair()) fstp++;} else {XYcubicFilter(); nstp++;};
- // drawGrid();
-  drawB();
-  mController.draw();
 //  if (showTexture)  paintImage();
 //  if (showEdges) drawEdges();
 //  if (showVertices) drawVertices(); 
 //  if (showL) drawL();  if (showB) drawB();   if (showQ) drawQ();  if (showV) drawV(); 
-    
-//  String ss="faster smoothing steps = "+Format(fstp,4); fill(green); text(ss,5,20);  
-//         ss="normal smoothing steps = "+Format(nstp,4); fill(blue); text(ss,5,10);  
+  drawGrid();
+  drawPins();
+  //fill(black);
+ // Mouse.draw();
+  //noFill();
+  //stroke(red);
+  //G[pi][pj].draw();
+ // mController.draw();
+  String ss="faster smoothing steps = "+Format(fstp,4); fill(green); text(ss,5,20);  
+         ss="normal smoothing steps = "+Format(nstp,4); fill(blue); text(ss,5,10);  
    };
-void drawGrid(){
-  stroke(0);
-  strokeWeight(4);
-  beginShape(POINTS);
-   for (int i=0; i<G.length; i++) {
-     for (int j=0; j<G[i].length; j++) { 
-        vertex(G[i][j].x, G[i][j].y); 
-      }
-   }
-   endShape();
-}
+  
 void paintImage() {
    textureMode(NORMAL);       // texture parameters in [0,1]x[0,1]
    for (int i=0; i<n-1; i++) {
-     beginShape(QUAD_STRIP); 
-   //  texture(myImage); 
-//       vertex((displayWidth-myImage.width)/2, (displayHeight-myImage.height)/2, 0, 0);
-//       vertex((myImage.width+displayWidth)/2, (displayHeight-myImage.height)/2, myImage.width, 0);
-//       vertex((myImage.width+displayWidth)/2, (displayHeight+myImage.height)/2, myImage.width, myImage.height);
-//       vertex((displayWidth-myImage.width)/2,(displayHeight+myImage.height)/2, 0, myImage.height);
+     beginShape(QUAD_STRIP); //texture(myImage); 
      for (int j=0; j<n; j++) { 
         vertex(G[i][j].x,    G[i][j].y,      i*ww, j*hh); 
         vertex(G[i+1][j].x, G[i+1][j].y, (i+1)*ww, j*hh); };
@@ -132,12 +119,7 @@ void paintImage() {
 void drawEdges() {
    stroke(black); noFill(); 
    for (int i=0; i<n-1; i++) {
-      beginShape(QUAD_STRIP); 
-      // texture(myImage);
-//         vertex((displayWidth-myImage.width)/2, (displayHeight-myImage.height)/2, 0, 0);
-//         vertex((myImage.width+displayWidth)/2, (displayHeight-myImage.height)/2, myImage.width, 0);
-//         vertex((myImage.width+displayWidth)/2, (displayHeight+myImage.height)/2, myImage.width, myImage.height);
-//         vertex((displayWidth-myImage.width)/2,(displayHeight+myImage.height)/2, 0, myImage.height);
+      beginShape(QUAD_STRIP); texture(myImage); 
       for (int j=0; j<n; j++) { vertex(G[i][j].x, G[i][j].y); vertex(G[i+1][j].x, G[i+1][j].y); };
       endShape();
       };
@@ -147,50 +129,37 @@ void drawVertices() {
    noStroke(); fill(red); 
    for (int i=0; i<n; i++) for (int j=0; j<n;j++) if (pinned[i][j]) G[i][j].show(4);
    }
+
 void drawL() {stroke(green); for (int i=0; i<n; i++) for (int j=0; j<n;j++) L[i][j].show(G[i][j]); }
-void drawB() {stroke(blue); for (int i=0; i<n; i++) for (int j=0; j<n;j++) {B[i][j].show(G[i][j]); println("B: "+B[i][j]);}}
+void drawB() {stroke(red); for (int i=0; i<n; i++) for (int j=0; j<n;j++) B[i][j].show(G[i][j]); }
 void drawQ() {stroke(red); for (int i=0; i<n; i++) for (int j=0; j<n;j++) Q[i][j].show(G[i][j]); }
 void drawV() {stroke(magenta); for (int i=0; i<n; i++) for (int j=0; j<n;j++) V[i][j].show(G[i][j]); }
 
+void drawGrid(){
+  stroke(red);
+  strokeWeight(4);
+  for(int i=0;i<G.length-1;i++){
+    for(int j=0;j<G[i].length-1;j++){
+        line(G[i][j].x,G[i][j].y,G[i+1][j].x,G[i+1][j].y);
+        line(G[i][j].x,G[i][j].y,G[i][j+1].x,G[i][j+1].y);
+    }
+ } 
+}
+void drawPins(){
+  fill(blue);
+  for(int i=0;i<G.length;i++){
+    for(int j=0;j<G[i].length;j++){  
+      if(pinned[i][j]){
+          ellipse(G[i][j].x, G[i][j].y,20,20);
+       }
+    }
+  }
+}
 
 //**********************************
 //***      GUI ACTIONS
 //**********************************
-void keyPressed() {  
-   if (key=='c')  {cn[m]=0;}
-   if (key=='p')  {pinBorder();}   
-   if (key==' ')  {resetVertices();}
-//   if ((key==CODED) && (keyCode==CONTROL)) if (!smoothing) {sfairInit();  fstp=0; smoothing=true;};
-   if (key=='e') showEdges=!showEdges;   
-   if (key=='L') showL=!showL;
-   if (key=='B') showB=!showB;
-   if (key=='V') showV=!showV;
-   if (key=='Q') showQ=!showQ;
-   if (key=='m') move=!move; 
-   if (key=='t') showTexture=!showTexture;
-   if (key=='v') showVertices=!showVertices; 
-   if (key=='0') {m=0; restoreConstraints();fs();}
-   if (key=='1') {m=1; restoreConstraints();fs();}
-   if (key=='2') {m=2; restoreConstraints();fs();}
-   if (key=='3') {m=3; restoreConstraints();fs();}
-   if (key=='4') {m=4; restoreConstraints();fs();}
-   if (key=='5') {m=0; restoreConstraints();fs();}
-   if (key=='6') {m=1; restoreConstraints();fs();}
-   if (key=='7') {m=2; restoreConstraints();fs();}
-   if (key=='8') {m=3; restoreConstraints();fs();}
-   if (key=='9') {m=4; restoreConstraints();fs();}
-   if (key==')') {m=0; saveConstraints();}
-   if (key=='!') {m=1; saveConstraints();}
-   if (key=='@') {m=2; saveConstraints();}
-   if (key=='#') {m=3; saveConstraints();}
-   if (key=='$') {m=4; saveConstraints();}
-   if (key=='%') {m=0; saveConstraints();}
-   if (key=='^') {m=1; saveConstraints();}
-   if (key=='&') {m=2; saveConstraints();}
-   if (key=='*') {m=3; saveConstraints();}
-   if (key=='(') {m=4; saveConstraints();}
-  };
-  
+
 //void mousePressed() { 
 //   Mouse.setToMouse(); 
 //   pickVertex();  // sets pi, pj to indices of vertex closest to mouse
@@ -199,56 +168,65 @@ void keyPressed() {
 //   nstp=0;
 //   smoothing=false;
 //   };  
-void pressedBeta() { 
-   Mouse.setTo(mController.firstPt()); 
-   pickVertex();  // sets pi, pj to indices of vertex closest to mouse
-   pinned[pi][pj]=true;
-   offset.setTo(dif(Mouse,G[pi][pj]));
-   nstp=0;
-   smoothing=false;
-   };  
-void pickVertex() {
-  float minDist=2*w;
-  for (int i=0; i<n; i++) for (int j=0; j<n; j++) {
-    float dist = Mouse.disTo(G[i][j]);
-    if (dist<minDist) {minDist=dist; pi=i; pj=j;};
-    };
-  }    
-  
+//   
+
 //void mouseReleased() {    // unpin vertex if ctrl is pressed when mouse released
-//   //if (keyPressed) if (key==CODED) if (keyCode==CONTROL)  
-//   pinned[pi][pj]=false;
+//  // if (keyPressed) if (key==CODED) if (keyCode==CONTROL)  pinned[pi][pj]=false;
 //   smoothing=true; sfairInit(); fstp=0;
 //   };   
 
 void fs() { smoothing=true; sfairInit(); fstp=0; for(int k=0; k<100; k++) if (sfair()) fstp++;}
+
+void pressedBeta() { 
+   pressed=true;
+   Mouse.setTo(mController.firstPt()); 
+   pickVertex();  // sets pi, pj to indices of vertex closest to mouse
+   pinned[pi][pj]=true;
+
+   };  
+void pickVertex() {
+  float minDist=2*w;
+  for (int i=0; i<n; i++) 
+    for (int j=0; j<n; j++) {
+      float dist = Mouse.disTo(G[i][j]);
+    if (dist<minDist) {
+      minDist=dist; 
+      pi=i; 
+      pj=j;
+    };
+    };
+  }    
+void movePinned(){
+   
+   Mouse= mController.firstPt();
+   //offset.setTo(dif(Mouse,G[pi][pj]));
+   G[pi][pj].setTo(Mouse); 
+  // G[pi][pj].addVec(offset);
+   nstp=0;
+   smoothing=false;
+}
+  
+
 /********************************************************************************************/
 //Override android touch events
 /*******************************************************************************************/
 
-
 public boolean surfaceTouchEvent(MotionEvent me) {//Overwrite this android touch method to process touch data
   int action= whichAction(me);
   if(action==1){
-    pressed=true;
+//    pressed=true;
     mController.touch(me,whichFinger(me)); //Register the touch event
-     //pressedBeta();
-   
-  
+    pressedBeta();
   }
   else if(action==0){
-    mController.lift(whichFinger(me)); //Register the lift event
-    pressed=false;
+    mController.lift(whichFinger(me)); //Register the lift event   
     smoothing=true; sfairInit(); fstp=0;
-   // mouseReleased();
   }
-  else if(action==2){
-    //pressed=true;
-    pressedBeta();
-    mController.motion(me);//Register the motion event
-   
-  }
-  return super.surfaceTouchEvent(me);
+ else if(action==2){
+   mController.motion(me);//Register the motion event
+   movePinned();
+ }
+ return super.surfaceTouchEvent(me);
 }  
 int whichAction(MotionEvent me) { // 1=press, 0=release, 2=drag
    int action = me.getAction(); 
