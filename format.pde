@@ -9,8 +9,6 @@ String  Format(String s, int n) {String spaces = "                              
     String back = spaces.substring(0, L);
     return(s+back);
   };
-
-
 String  Format(float f, int n, int z) {
    String spaces = "                                ";
    String s=nf(f,n,z); 

@@ -1,6 +1,7 @@
 import android.view.MotionEvent;
 class MultiTouch{
   pt currentTouch, lastTouch, disk;
+  Pin p;
   boolean selected;
   int meIndex;
   pt movement; 
@@ -10,6 +11,7 @@ class MultiTouch{
    disk=new pt();
    selected=false;
    meIndex=-1;
+   p=new Pin();
   }
 //  MultiTouch(float x,float y){
 //   currentTouch=new pt();
@@ -24,6 +26,7 @@ class MultiTouch{
    disk=new pt(x,y,z);
    selected=false;
    meIndex=-1;
+
   }
   void lift(){
    //this.meIndex=-1;
@@ -58,6 +61,9 @@ class MultiTouch{
   ArrayList getHistory(){
     //Need to implement
    return null; 
+  }
+  void setPin(Pin pin){
+    p=pin;
   }
   
 }

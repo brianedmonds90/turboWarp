@@ -3,12 +3,17 @@
 //Modified to support multiTouch on android devices by Brian Edmonds
 import processing.opengl.*;                // comment out if not using OpenGL
 MultiTouchController mController;    //Multiple Finger touch object
-
+ArrayList <Pin>Pins ;
 PImage myImage;                            // image used as tecture 
 boolean pressed;
 int n=33;                                   // size of grid. Must be >2!
 pt[][] G = new pt [n][n];                  // array of vertices
 int pi,pj;                                   // indices of vertex being dragged when mouse is pressed
+boolean init;
+//TODO TESTING
+int []piArray =new int[4];
+int []pjArray=new int[4];
+//End of TODO
 pt Mouse = new pt(0,0,0);                   // current mouse position
 boolean showVertices=true, showEdges=false, showTexture=true;  // flags for rendering vertices and edges
 color red = color(200, 10, 10), blue = color(10, 10, 200), green = color(10, 200, 20), 
@@ -62,6 +67,7 @@ void setup() { size(800, 800, OPENGL);                              //for OpenGL
   initConstraints();
   pressed= false;
   mController=new MultiTouchController();
+  Pins=new ArrayList<Pin>(4);
   } 
  
 void resetVertices() {   // resets points and laplace vectors 
@@ -179,34 +185,74 @@ void fs() { smoothing=true; sfairInit(); fstp=0; for(int k=0; k<100; k++) if (sf
 
 void pressedBeta() { 
    pressed=true;
-   Mouse.setTo(mController.firstPt()); 
-   pickVertex();  // sets pi, pj to indices of vertex closest to mouse
-   pinned[pi][pj]=true;
-
-   };  
-void pickVertex() {
+   MultiTouch temp;
+   for(int i=0;i<mController.size();i++){
+       temp=mController.getAt(i);
+       //Mouse.setTo(temp.disk); 
+       pickVertex(temp);  // sets pi, pj to indices of vertex closest to mouse
+       pinned[temp.p.gridI][temp.p.gridJ]=true;
+    
+   }
+};  
+//void pickVertex() {
+//  float minDist=2*w;
+//  for (int i=0; i<n; i++) 
+//    for (int j=0; j<n; j++) {
+//      float dist = Mouse.disTo(G[i][j]);
+//    if (dist<minDist) {
+//      minDist=dist;        
+//      pi=i; 
+//      pj=j;
+//    };
+//    };
+//  }
+void pickVertex(MultiTouch t) {
   float minDist=2*w;
   for (int i=0; i<n; i++) 
     for (int j=0; j<n; j++) {
-      float dist = Mouse.disTo(G[i][j]);
+      float dist = t.disk.disTo(G[i][j]);
     if (dist<minDist) {
-      minDist=dist; 
+      minDist=dist;       
       pi=i; 
       pj=j;
     };
     };
-  }    
+    t.setPin(new Pin(pi,pj));
+  }
+//void movePinned(){
+//   Mouse= mController.getDiskAt(0);
+//   G[pi][pj].setTo(Mouse); 
+//   nstp=0;
+//   smoothing=false;
+//}
 void movePinned(){
-   
-   Mouse= mController.firstPt();
-   //offset.setTo(dif(Mouse,G[pi][pj]));
-   G[pi][pj].setTo(Mouse); 
-  // G[pi][pj].addVec(offset);
+  MultiTouch t;
+  for(int i=0;i<mController.size();i++){
+    t=mController.getAt(i);
+     //Mouse= t.disk;
+     G[t.p.gridI][t.p.gridJ].setTo(t.disk); 
+  }
    nstp=0;
    smoothing=false;
 }
   
-
+//public void keyPressed() {
+//  if(key == CODED) {
+//   // if(keyCode == KeyEvent.KEYCODE_BACK) {
+//     // clearAll();
+//     // keyCode = 0;  // don't quit
+//    //} else 
+//    if(keyCode == KeyEvent.KEYCODE_MENU) {
+//      saved = true;
+//      File dir = new File("//sdcard//DCIM/Diatomaton/");
+//      if(!dir.isDirectory()) {
+//        dir.mkdirs();
+//      }
+//      saveFrame("//sdcard//turboWarb/ShapeSpirit####.png");
+//      
+//    }
+//  }
+//}
 /********************************************************************************************/
 //Override android touch events
 /*******************************************************************************************/

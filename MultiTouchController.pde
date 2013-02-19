@@ -20,18 +20,22 @@ class MultiTouchController{//Used to process the android API touch events for ea
    }
   public void touch(MotionEvent ev, int pointerId){//Method used when a touch event happens
     pt cTouch= new pt(ev.getX(pointerId),ev.getY(pointerId),0);
-    if(mTContainer.size()<1){
-      mTContainer.add(new MultiTouch(cTouch.x,cTouch.y,0));
-    }
+    MultiTouch finger;
+   if(mTContainer.size()<4){
+      finger=new MultiTouch(cTouch.x,cTouch.y,0);
+      finger.selected=true;
+      finger.meIndex=pointerId;
+      finger.lastTouch=cTouch;
+      mTContainer.add(finger);
+  }
     else{
-      MultiTouch temp =findClosest(cTouch);
+     MultiTouch temp =findClosest(cTouch);
       if(temp!=null){
         temp.selected=true;
         temp.meIndex=pointerId;
-        temp.lastTouch=cTouch; //Keep track of the touch location for movement
-       }
+       temp.lastTouch=cTouch; //Keep track of the touch location for movement
+     }
     }
- 
   }
   public void lift(int pointerId){//Used when a finger is lifted
     MultiTouch temp=null;
@@ -97,5 +101,18 @@ class MultiTouchController{//Used to process the android API touch events for ea
   pt firstPt(){//Returns the first point of the MultiTouchController
     return mTContainer.get(0).disk; 
   }
-  
+  int size(){
+     return this.mTContainer.size(); 
+  }
+  pt getDiskAt(int index){
+    return this.mTContainer.get(index).disk;
+  }
+  MultiTouch getAt(int index){
+   return mTContainer.get(index); 
+  }
+//  void updatePinned(){
+//     for(int i=0;i<MultiTouchController.getAt(index)){
+//        
+//     }
+//  }
 }
