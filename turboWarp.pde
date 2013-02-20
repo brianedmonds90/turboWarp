@@ -2,10 +2,13 @@
 // Written by Jarek Rossignac June 2006
 //Modified to support multiTouch on android devices by Brian Edmonds
 import processing.opengl.*;                // comment out if not using OpenGL
+import android.view.KeyEvent;
+import java.io.File;
 MultiTouchController mController;    //Multiple Finger touch object
 ArrayList <Pin>Pins ;
 PImage myImage;                            // image used as tecture 
 boolean pressed;
+boolean showMenu;
 int n=33;                                   // size of grid. Must be >2!
 pt[][] G = new pt [n][n];                  // array of vertices
 int pi,pj;                                   // indices of vertex being dragged when mouse is pressed
@@ -56,9 +59,13 @@ boolean move = true;
 int fstp=0, nstp=0;              // Iteration counters for fast and normal smoothing
 boolean smoothing = false;
 
+
+
 // ** SETUP **
-void setup() { size(800, 800, OPENGL);                              //for OpenGL use: void setup() { size(800, 800, OPENGL);  
-  PFont font = loadFont("Courier-14.vlw"); textFont(font, 12);
+void setup() { 
+  size(800, 800, OPENGL);                              //for OpenGL use: void setup() { size(800, 800, OPENGL);  
+  
+  PFont font = loadFont("Courier-14.vlw"); textFont(font, 30);
   myImage = loadImage("jarek.jpg");                                 // load image for texture
   ww=1.0/(n-1); hh=1.0/(n-1);                                            // set intial width and height of a cell
   w=width*ww; h=height*hh;                                            // set intial width and height of a cell in normalized [0,1]x[0,1]
@@ -67,8 +74,19 @@ void setup() { size(800, 800, OPENGL);                              //for OpenGL
   initConstraints();
   pressed= false;
   mController=new MultiTouchController();
-  Pins=new ArrayList<Pin>(4);
+  Pins=new ArrayList<Pin>(4);  
+  
+  titleFontSize = displayWidth/8;
+  menuFontSize = titleFontSize*0.9;
+  menuPad = menuFontSize/4;
+ // font = createFont("Courier.ttf", titleFontSize); /// NEED to include a .ttf in your data dir (or somewhere)
+  hint(ENABLE_NATIVE_FONTS);
+  //textFont(font, titleFontSize);
+  
   } 
+ 
+ float titleFontSize, menuFontSize, menuPad;
+//static float minSampleDistSq = sq(8);
  
 void resetVertices() {   // resets points and laplace vectors 
    for (int i=0; i<n; i++) for (int j=0; j<n; j++) {
@@ -90,10 +108,22 @@ void pinBorder() { // pins two rings of border vertices
  
 // ** DRAW **
 void draw() { background(255); sphereDetail(4); 
-//  Mouse.setToMouse(); 
-//  if(mController.mTContainer.size()>0)
-//    Mouse.setTo(mController.firstPt());
-  
+  if(showMenu) {
+   // textFont(font, menuFontSize);
+    textAlign(CENTER);
+    fill(0,0,0,200); noStroke();
+    float menuHeight = 2*(menuFontSize+2*menuPad);
+    float sidePad = width/5f;
+    rect(sidePad, height-menuHeight, width-sidePad*2, menuHeight);
+    fill(255);
+    text("Save", width/2, height-2*menuPad); 
+    text("Share", width/2, height-(menuFontSize+4*menuPad));
+    stroke(255); strokeWeight(1);
+    float y = height-(menuFontSize+2*menuPad);
+    line(menuPad+sidePad, y, width-(menuPad+sidePad), y);
+  }
+
+
   if (smoothing) {for(int k=0; k<30; k++) if (sfair()) fstp++;} else {XYcubicFilter(); nstp++;};
 //  if (showTexture)  paintImage();
 //  if (showEdges) drawEdges();
@@ -101,12 +131,7 @@ void draw() { background(255); sphereDetail(4);
 //  if (showL) drawL();  if (showB) drawB();   if (showQ) drawQ();  if (showV) drawV(); 
   drawGrid();
   drawPins();
-  //fill(black);
- // Mouse.draw();
-  //noFill();
-  //stroke(red);
-  //G[pi][pj].draw();
- // mController.draw();
+
   String ss="faster smoothing steps = "+Format(fstp,4); fill(green); text(ss,5,20);  
          ss="normal smoothing steps = "+Format(nstp,4); fill(blue); text(ss,5,10);  
    };
@@ -236,28 +261,31 @@ void movePinned(){
    smoothing=false;
 }
   
-//public void keyPressed() {
-//  if(key == CODED) {
-//   // if(keyCode == KeyEvent.KEYCODE_BACK) {
+public void keyPressed() {
+ // if(key == CODED) {
+//   if(keyCode == KeyEvent.KEYCODE_BACK) {
 //     // clearAll();
-//     // keyCode = 0;  // don't quit
-//    //} else 
-//    if(keyCode == KeyEvent.KEYCODE_MENU) {
-//      saved = true;
+//      keyCode = 0;  // don't quit
+//    } else 
+    println("key pressed");
+    if(keyCode == KeyEvent.KEYCODE_MENU) {
+     // saved = true;
+     println("menu pressed");
+     showMenu=!showMenu;
 //      File dir = new File("//sdcard//DCIM/Diatomaton/");
 //      if(!dir.isDirectory()) {
 //        dir.mkdirs();
 //      }
-//      saveFrame("//sdcard//turboWarb/ShapeSpirit####.png");
-//      
-//    }
-//  }
-//}
+//      saveFrame("//sdcard//turboWarb/warped####.png");
+    }
+  //}
+}
 /********************************************************************************************/
 //Override android touch events
 /*******************************************************************************************/
 
 public boolean surfaceTouchEvent(MotionEvent me) {//Overwrite this android touch method to process touch data
+  println("surfaceTouchEvent");
   int action= whichAction(me);
   if(action==1){
 //    pressed=true;
