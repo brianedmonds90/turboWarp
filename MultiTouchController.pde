@@ -9,9 +9,6 @@ class MultiTouchController{//Used to process the android API touch events for ea
    }
      MultiTouchController(){
       mTContainer=new ArrayList<MultiTouch>();
-     // for(int i=0;i<num;i++){
-       // mTContainer.add(new MultiTouch()); 
-      //}
    }
    public void init(){//Puts disk objects on the screen to be moved around
      for(int i=0;i<4;i++){
@@ -110,6 +107,23 @@ class MultiTouchController{//Used to process the android API touch events for ea
   MultiTouch getAt(int index){
    return mTContainer.get(index); 
   }
+  void resetPins(){
+    for(int i=0;i<mTContainer.size();i++){
+      mTContainer.get(i).resetPin();
+    } 
+  }
+//  Pin closestPin(pt aa){
+//    float minDistance= Float.MAX_VALUE;
+//    MultiTouch closest=null;
+//    for(MultiTouch mt: mTContainer){
+//      float d= Grid[mt.p.gridI][mt.p.gridJ].disTo(aa);
+//      if(d<minDistance&&!mt.selected){
+//        minDistance=d;
+//        closest=mt; 
+//      }
+//    }
+//    return closest.p; 
+//  }
 //  void updatePinned(){
 //     for(int i=0;i<MultiTouchController.getAt(index)){
 //        

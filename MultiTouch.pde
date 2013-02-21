@@ -13,20 +13,12 @@ class MultiTouch{
    meIndex=-1;
    p=new Pin();
   }
-//  MultiTouch(float x,float y){
-//   currentTouch=new pt();
-//   lastTouch= new pt();
-//   disk=new pt(x,y);
-//   selected=false;
-//   meIndex=-1;
-//  }
   MultiTouch(float x,float y,float z){
    currentTouch=new pt();
    lastTouch= new pt();
    disk=new pt(x,y,z);
    selected=false;
    meIndex=-1;
-
   }
   void lift(){
    //this.meIndex=-1;
@@ -64,6 +56,9 @@ class MultiTouch{
   }
   void setPin(Pin pin){
     p=pin;
+  }
+  void resetPin(){
+    p=new Pin(); 
   }
   
 }
