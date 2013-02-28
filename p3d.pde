@@ -92,6 +92,15 @@ class pt {
   void inverserPers(float d) { y=d*y/(d-z); x=d*x/(d-z); z=d*z/(d-z); };
   boolean coplanar (pt A, pt B, pt C) {return(abs(tetVol(this,A,B,C))<0.0001);};
   boolean cw (pt A, pt B, pt C) {return(tetVol(this,A,B,C)>0.0001);};
+  //pt P() {return P(0,0); };                                                                            // make point (0,0)                                             
+  //pt P(pt P) {return P(P.x,P.y); };                                                                    // make copy of point A
+  //pt P(float s, pt A) {return new pt(s*A.x,s*A.y); };                                                  // sA
+  //pt P(pt P, vec V) {return P(P.x + V.x, P.y + V.y); }                                                 //  P+V (P transalted by vector V)
+  //pt P(pt P, float s, vec V) {return P(P,V(s,V)); }                                                    //  P+sV (P transalted by sV)
+  pt P(float x, float y,float z) {return new pt(x,y,z); };  
+  pt P(pt A, float s, pt B) {return P(A.x+s*(B.x-A.x),A.y+s*(B.y-A.y),A.z+s*(B.z-A.z)); };                             // A+sAB
+  //pt P(pt A, pt B) {return P((A.x+B.x)/2,(A.y+B.y)/2); };                                              // (A+B)/2
+
   } ;
  
 class vec { float x,y,z; 

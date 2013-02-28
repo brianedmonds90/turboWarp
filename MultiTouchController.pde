@@ -112,21 +112,27 @@ class MultiTouchController{//Used to process the android API touch events for ea
       mTContainer.get(i).resetPin();
     } 
   }
-//  Pin closestPin(pt aa){
-//    float minDistance= Float.MAX_VALUE;
-//    MultiTouch closest=null;
-//    for(MultiTouch mt: mTContainer){
-//      float d= Grid[mt.p.gridI][mt.p.gridJ].disTo(aa);
-//      if(d<minDistance&&!mt.selected){
-//        minDistance=d;
-//        closest=mt; 
-//      }
-//    }
-//    return closest.p; 
-//  }
-//  void updatePinned(){
-//     for(int i=0;i<MultiTouchController.getAt(index)){
-//        
-//     }
-//  }
+  Pin closestPin(pt aa){
+    float minDistance= Float.MAX_VALUE;
+    MultiTouch closest=null;
+    for(MultiTouch mt: mTContainer){
+      float d= G[mt.p.gridI][mt.p.gridJ].disTo(aa);
+      if(d<minDistance&&!mt.selected){
+        minDistance=d;
+        closest=mt; 
+      }
+    }
+    
+    return closest.p; 
+  }
+  void unPin(Pin p){
+    MultiTouch mc;
+     for(int i=0;i<mTContainer.size();i++){
+       mc=mTContainer.get(i);
+       if(mc.p==p){
+         mTContainer.remove(i);
+          return; 
+       }
+    }
+ }
 }

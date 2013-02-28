@@ -1,30 +1,30 @@
 // Flat tringle mesh with texture for image warping
 // Written by Jarek Rossignac June 2006
 //Modified to support multiTouch on android devices by Brian Edmonds
-import processing.opengl.*;                // comment out if not using OpenGL
+import processing.opengl.*;            // comment out if not using OpenGL
 import android.view.KeyEvent;
 import java.io.File;
+import android.os.Environment;
 MultiTouchController mController;    //Multiple Finger touch object
-PImage myImage;                            // image used as tecture 
+PImage myImage;     // image used as tecture 
 static boolean drawPins=false;
-boolean showMenu;
-static boolean save,unPin,reset;
+boolean drawGrid,showMenu;
+static boolean animate=false;
+Pin pp;
+static boolean save,unPin,reset,init;
+boolean drawDummyGrid;
+float t,deltaT;
 int n=33;                                   // size of grid. Must be >2!
 pt[][] G = new pt [n][n];                  // array of vertices
-int pi,pj;                                   // indices of vertex being dragged when mouse is pressed
-boolean init;
+pt[][] dummyG=new pt[n][n];                //original grid for animation
+int pi,pj;                                 // indices of vertex being dragged when mouse is pressed
 Menu menu;
-//TODO TESTING
-int []piArray =new int[4];
-int []pjArray=new int[4];
-//End of TODO
-//pt Mouse = new pt(0,0,0);                   // current mouse position
 boolean showVertices=false, showEdges=false, showTexture=true;  // flags for rendering vertices and edges
 color red = color(200, 10, 10), blue = color(10, 10, 200), green = color(10, 200, 20), 
 magenta = color(200, 50, 200), black = color(10, 10, 10); 
 float w,h,ww,hh;                                  // width, height of cell in absolute and normalized units
 vec offset = new vec (0,0,0);                  // offset vector from mouse to clicked vertex
-
+pt a,b,c;
 // constraints
 int mc = 60;                                   // max number of constraints
 int[] cn = new int [10];                           // number of constraints in each set
@@ -60,10 +60,21 @@ boolean smoothing = false;
 
 // ** SETUP **
 void setup() { 
+  deltaT=.01;
+  t=0.0;
   size(displayWidth, displayHeight, OPENGL);                              //for OpenGL use: void setup() { size(800, 800, OPENGL);  
   menu=new Menu();
+  a= new pt();
+  b=new pt();
+  c=new pt();
+  c.setToPoint(a);
+  unPin=false;
+  drawGrid=false;
+  pp=new Pin();
   PFont font = loadFont("Courier-14.vlw"); textFont(font, 30);
-  myImage = loadImage("jarek.jpg");                                 // load image for texture
+  File f = new File(Environment.getExternalStorageDirectory().getPath() + "turboWarp/warped0426.png"); 
+ // myImage = loadImage("//sdcard//turboWarp/warped0426.png");       // load image for texture
+  myImage= loadImage("jarek.jpg");
   ww=1.0/(n-1); hh=1.0/(n-1);                                            // set intial width and height of a cell
   w=800*ww; h=800*hh;                                            // set intial width and height of a cell in normalized [0,1]x[0,1]
   resetVertices();
@@ -71,7 +82,10 @@ void setup() {
   initConstraints();
   mController=new MultiTouchController();  
   textFont(font, titleFontSize);
+  initDummyG();
+  //drawDummyGrid=true;
   hint(ENABLE_NATIVE_FONTS);
+  //animate=false;
   } 
  
  float titleFontSize, menuFontSize, menuPad;
@@ -85,7 +99,14 @@ void resetVertices() {   // resets points and laplace vectors
      V[i][j]=new vec(0,0,0);
      };  
    } 
-
+void initDummyG(){
+    for(int i=0;i<G.length;i++){
+   for(int j=0;j<G[i].length;j++){
+     dummyG[i][j]=new pt();
+     dummyG[i][j].setToPoint(G[i][j]);
+   } 
+  }
+}
 void pinBorder() { // pins two rings of border vertices
   for (int i=0; i<n; i++) for (int j=0; j<n; j++) pinned[i][j]=false;  
   for (int i=0; i<n; i++) {pinned[i][0]=true; pinned[i][1]=true;    pinned[i][n-2]=true; pinned[i][n-1]=true; };
@@ -96,33 +117,48 @@ void pinBorder() { // pins two rings of border vertices
  
 // ** DRAW **
 void draw() { background(255); sphereDetail(4); 
-
-
-  if (smoothing) {for(int k=0; k<30; k++) if (sfair()) fstp++;} else {XYcubicFilter(); nstp++;};
+  if (smoothing) {
+    for(int k=0; k<30; k++) 
+      if (sfair()) 
+        fstp++;
+    } 
+  else {
+    XYcubicFilter(); 
+    nstp++;
+  };
   if (showTexture)  paintImage();
   if (showEdges) drawEdges();
   if (showVertices) drawVertices(); 
   if (showL) drawL();  if (showB) drawB();   if (showQ) drawQ();  if (showV) drawV(); 
-//  drawGrid();
+  if(drawGrid){
+    drawGrid();
+  }
+  if(drawDummyGrid){
+    drawDummyGrid();
+  }
   if(drawPins){//Show constraints
     drawPins();
   }
   fill(50);
   textSize(32);
-//  text("TESTING",100,100);
-//  noFill();
   menu.draw();
   if(save){//Save a screenshot
-    saveFrame("//sdcard//turboWarb/warped####.png"); 
+    save();
+    //saveFrame("//sdcard//turboWarb/warped####.png"); 
    save=false; 
   }
   else if(reset){//Reset the morph to the original image
     reset();
     reset=false; 
   }
-//  String ss="faster smoothing steps = "+Format(fstp,4); fill(green); text(ss,5,20);  
-//         ss="normal smoothing steps = "+Format(nstp,4); fill(blue); text(ss,5,10);  
-  };
+  if(animate){
+    if(t<1.0)
+      t+=deltaT;
+      //drawGrid=true;
+      //drawDummyGrid=true;
+     lerpPins(t,dummyG); //animate grid function
+  }
+};
   
 void paintImage() {
    textureMode(NORMAL);       // texture parameters in [0,1]x[0,1]
@@ -165,11 +201,25 @@ void drawGrid(){
     }
  } 
 }
+void drawDummyGrid(){
+  stroke(blue);
+  strokeWeight(4);
+  for(int i=0;i<dummyG.length-1;i++){
+    for(int j=0;j<dummyG[i].length-1;j++){
+        line(dummyG[i][j].x,dummyG[i][j].y,dummyG[i+1][j].x,dummyG[i+1][j].y);
+        line(dummyG[i][j].x,dummyG[i][j].y,dummyG[i][j+1].x,dummyG[i][j+1].y);
+    }
+ } 
+}
 void drawPins(){
   fill(blue);
   for(int i=2;i<G.length-2;i++){
     for(int j=2;j<G[i].length-2;j++){  
       if(pinned[i][j]){
+          if(pp.gridI==i &&pp.gridJ==j)
+            fill(red);
+           else
+             fill(blue);
           ellipse(G[i][j].x, G[i][j].y,20,20);
        }
     }
@@ -190,10 +240,6 @@ void pressedBeta() {
        pinned[temp.p.gridI][temp.p.gridJ]=true;
    }
 };  
-void unPin(MotionEvent me) { 
-    MultiTouch temp= mController.findClosest(new pt(me.getX(),me.getY(),0));  // finds the closest pin to the mouse
-    pinned[temp.p.gridI][temp.p.gridJ]=false;
-} 
 void pickVertex(MultiTouch t) {
   float minDist=2*w;
   for (int i=0; i<n; i++) 
@@ -207,7 +253,6 @@ void pickVertex(MultiTouch t) {
     };
     t.setPin(new Pin(pi,pj));
   }
-
 void movePinned(){
   MultiTouch t;
   for(int i=0;i<mController.size();i++){
@@ -219,7 +264,9 @@ void movePinned(){
    smoothing=false;
 }
  void save(){  
-    saveFrame("//sdcard//turboWarb/warped####.png"); 
+     myImage=get(0,0,displayWidth,800);
+     reset();
+     //drawGrid=true;
   }
   //TODO fix this method
   void reset(){
@@ -228,6 +275,10 @@ void movePinned(){
     pinBorder();
     initConstraints();
   }
+  //void unPin(){
+   //Select closest pin
+  // mController.closestPin(getPoint(me));    
+  //}
   
 /********************************************************************************************/
 //Override android touch events
@@ -241,8 +292,16 @@ public boolean surfaceTouchEvent(MotionEvent me) {//Overwrite this android touch
       menu.buttonPressed(me);//User has pressed a menu button
     }
     else{
-      mController.touch(me,whichFinger(me)); //Register the touch event
-      pressedBeta();
+      if(unPin){
+       // println("Point on Screen: "+getPt(me));
+        pp=mController.closestPin(getPt(me));
+        unPin(pp);
+        unPin=false;
+      }
+      else{
+        mController.touch(me,whichFinger(me)); //Register the touch event
+        pressedBeta();
+      }
     }
   }
   else if(action==0){
@@ -269,3 +328,33 @@ int whichFinger(MotionEvent me) {
           int pointerId = me.getPointerId(pointerIndex);
           return pointerId;
           }
+          
+pt getPt(MotionEvent me){
+    pt cTouch= new pt(me.getX(0),me.getY(0),0);
+    return cTouch;
+}
+void unPin(Pin p){
+  mController.unPin(p);
+   for(int i=2;i<G.length-2;i++){
+    for(int j=2;j<G[i].length-2;j++){  
+      if(pinned[i][j]){
+          if(pp.gridI==i &&pp.gridJ==j){
+            pinned[i][j]=false;
+             smoothing=true; sfairInit(); fstp=0;
+            return;
+          }
+       }
+    }
+  }
+}
+void lerpPins(float t,pt [][]dummyG){
+  for(int i=2;i<G.length-2;i++){
+    for(int j=2;j<G[i].length-2;j++){  
+     if(pinned[i][j]){
+       G[i][j]=a.P(G[i][j],t,dummyG[i][j]);
+       smoothing=true; sfairInit(); fstp=0;
+     }
+    }
+  }
+}
+

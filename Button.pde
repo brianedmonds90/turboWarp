@@ -11,7 +11,6 @@ class Button{
     strokeWeight(5);
     stroke(255,0,0);
     rect(x, y, 200, 100);//Save button
-   // fill(50);
     text(title, x+5, y+75); 
     noStroke();
   }
