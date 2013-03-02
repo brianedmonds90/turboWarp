@@ -24,7 +24,7 @@ class Button{
     if(me.getY()<y){
        return false; 
     }
-    if(me.getY()>y+200){
+    if(me.getY()>y+100){
       return false; 
     }
     return true;
